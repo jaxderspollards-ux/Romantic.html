@@ -17,39 +17,18 @@
       position: relative;
       overflow-x: hidden;
     }
-    .hearts-bg {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 0;
-    }
-    .heart-float {
-      position: absolute; font-size: 24px; opacity: 0.2;
-      animation: floatUp 8s infinite ease-in;
-    }
-    @keyframes floatUp {
-      0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-      10% { opacity: 0.3; }
-      90% { opacity: 0.2; }
-      100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
-    }
     .container {
       max-width: 420px; width: 100%;
       background: rgba(255,255,255,0.85); backdrop-filter: blur(20px);
       border-radius: 40px; box-shadow: 0 25px 50px rgba(255,105,135,0.2);
-      padding: 30px 25px; text-align: center; position: relative; z-index: 1;
+      padding: 30px 25px; text-align: center;
     }
     h1 { font-size: 26px; color: #d6336c; margin-bottom: 5px; font-weight: 700; letter-spacing: 2px; }
     .sub-title { font-size: 14px; color: #e6739f; margin-bottom: 25px; font-style: italic; }
 
-    .upload-area {
-      border: 2px dashed #faa2c1; border-radius: 24px; padding: 30px 20px;
-      background: rgba(255,218,224,0.3); cursor: pointer; transition: all 0.3s; margin-bottom: 15px;
-    }
-    .upload-icon { font-size: 48px; margin-bottom: 10px; }
-    .upload-text { color: #d6336c; font-size: 15px; font-weight: 500; }
-
     .film-viewer {
       width: 100%; height: 300px; border-radius: 24px; background: #1a1a1a;
-      overflow: hidden; position: relative; margin: 20px 0; display: none;
+      overflow: hidden; position: relative; margin: 20px 0;
       box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
     }
     .film-viewer::before, .film-viewer::after {
@@ -92,39 +71,28 @@
       70% { box-shadow: 0 0 0 15px rgba(255,77,109,0); }
       100% { box-shadow: 0 0 0 0 rgba(255,77,109,0); }
     }
+
     .used-section { display: none; }
     .used-icon { font-size: 70px; margin-bottom: 15px; }
-    .note { font-size: 12px; color: #999; margin-top: 20px; font-style: italic; }
-    .hidden { display: none !important; }
-    .btn {
-      background: linear-gradient(135deg, #ff6b9d, #c44569); border: none; color: white;
-      padding: 12px 25px; border-radius: 50px; font-size: 16px; font-weight: 600;
-      cursor: pointer; box-shadow: 0 6px 15px rgba(255,107,157,0.3); width: 80%; margin: 15px auto 0;
-    }
+    .loading-text { color: #d6336c; font-size: 16px; margin: 20px 0; }
+    .error-text { color: #999; font-size: 14px; margin: 20px 0; }
   </style>
 </head>
 <body>
-  <div class="hearts-bg" id="heartsBg"></div>
-  <div class="container" id="mainContainer">
-    <!-- 上传区 -->
-    <div id="uploadSection">
-      <h1>📸 你们的时光胶囊</h1>
-      <p class="sub-title">选择一些属于你们的回忆照片吧</p>
-      <div class="upload-area" id="uploadTrigger">
-        <div class="upload-icon">🖼️</div>
-        <div class="upload-text">点击这里选择照片 (2-8张)</div>
-      </div>
-      <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
-      <p class="note">💡 选完后会自动播放胶卷，无需额外点击</p>
+  <div class="container">
+    <!-- 加载中 -->
+    <div id="loadingSection">
+      <h1>💊 和好胶囊</h1>
+      <p class="loading-text">正在加载你们的回忆...</p>
     </div>
 
     <!-- 胶卷播放区 -->
     <div id="filmSection" style="display: none;">
-      <h1>🎞️ 回忆正在播放...</h1>
+      <h1>🎞️ 属于你们的回忆</h1>
       <div class="film-viewer" id="filmViewer">
         <div class="film-strip" id="filmStrip"></div>
       </div>
-      <p class="sub-title" id="filmHint">让胶卷慢慢转动，重温那些美好</p>
+      <p class="sub-title" id="filmHint">回忆正在缓缓展开...</p>
     </div>
 
     <!-- 和好券 -->
@@ -135,7 +103,6 @@
         <div class="coupon-desc">看完我们的回忆，<br>你愿意给彼此一个重新开始的机会吗？</div>
         <button class="forgive-btn" id="forgiveBtn">💖 原谅TA，点击和好</button>
       </div>
-      <p class="note">⚠️ 这张和好券只能使用一次哦</p>
     </div>
 
     <!-- 已使用 -->
@@ -143,124 +110,147 @@
       <div class="used-icon">🌸</div>
       <h1>和好成功！</h1>
       <p style="color:#666; margin: 15px 0;">这份回忆和好券已经被珍藏<br>你们已经和好如初啦 💕</p>
-      <p class="note">往后的日子，也要彼此珍惜</p>
+      <p style="font-size: 14px; color: #999;">往后的日子，也要彼此珍惜</p>
+    </div>
+
+    <!-- 错误 -->
+    <div id="errorSection" style="display: none;">
+      <h1>😔</h1>
+      <p class="error-text">这个链接好像不太对<br>可能已经过期或者无效了</p>
     </div>
   </div>
 
   <script>
     (function() {
       const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token') || 'default_capsule';
-      const STORAGE_KEY = `capsule_used_${token}`;
+      const token = urlParams.get('token');
+      const STORAGE_KEY_USED = `capsule_used_${token}`;
+      const STORAGE_KEY_PHOTOS = `photos_${token}`;
 
-      const uploadSection = document.getElementById('uploadSection');
+      const loadingSection = document.getElementById('loadingSection');
       const filmSection = document.getElementById('filmSection');
       const couponSection = document.getElementById('couponSection');
       const usedSection = document.getElementById('usedSection');
-      const fileInput = document.getElementById('fileInput');
-      const uploadTrigger = document.getElementById('uploadTrigger');
+      const errorSection = document.getElementById('errorSection');
       const filmViewer = document.getElementById('filmViewer');
       const filmStrip = document.getElementById('filmStrip');
       const filmHint = document.getElementById('filmHint');
       const forgiveBtn = document.getElementById('forgiveBtn');
 
-      let animationTimer = null;
-      let selectedFileList = []; // 存储选中的文件
-
-      // 漂浮爱心
-      function createHearts() {
-        const bg = document.getElementById('heartsBg');
-        const hearts = ['💖','💕','💗','💝','🌸','✨'];
-        for (let i=0; i<12; i++) {
-          const span = document.createElement('span');
-          span.className = 'heart-float';
-          span.textContent = hearts[Math.floor(Math.random()*hearts.length)];
-          span.style.left = Math.random()*100+'%';
-          span.style.animationDuration = 6+Math.random()*10+'s';
-          span.style.animationDelay = Math.random()*5+'s';
-          span.style.fontSize = 16+Math.random()*30+'px';
-          bg.appendChild(span);
-        }
+      // 检查 token
+      if (!token) {
+        loadingSection.style.display = 'none';
+        errorSection.style.display = 'block';
+        return;
       }
-      createHearts();
 
       // 检查是否已使用
-      if (localStorage.getItem(STORAGE_KEY) === 'used') {
-        uploadSection.style.display = 'none';
-        filmSection.style.display = 'none';
-        couponSection.style.display = 'none';
+      if (localStorage.getItem(STORAGE_KEY_USED) === 'used') {
+        loadingSection.style.display = 'none';
         usedSection.style.display = 'block';
         return;
       }
 
-      uploadTrigger.addEventListener('click', () => fileInput.click());
+      // 读取照片数据
+      const photosData = localStorage.getItem(STORAGE_KEY_PHOTOS);
+      if (!photosData) {
+        loadingSection.style.display = 'none';
+        errorSection.style.display = 'block';
+        return;
+      }
 
-      fileInput.addEventListener('change', (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-        selectedFileList = files.slice(0, 8); // 最多8张
-        // 直接开始播放
-        uploadSection.style.display = 'none';
-        filmSection.style.display = 'block';
-        playFilm(selectedFileList);
+      let images = [];
+      try {
+        images = JSON.parse(photosData);
+      } catch(e) {
+        loadingSection.style.display = 'none';
+        errorSection.style.display = 'block';
+        return;
+      }
+
+      if (images.length === 0) {
+        loadingSection.style.display = 'none';
+        errorSection.style.display = 'block';
+        return;
+      }
+
+      // 加载照片
+      loadingSection.style.display = 'none';
+      filmSection.style.display = 'block';
+
+      const imgElements = [];
+      images.forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.style.display = 'block';
+        filmStrip.appendChild(img);
+        imgElements.push(img);
       });
 
-      function playFilm(files) {
-        filmStrip.innerHTML = '';
-        const readers = files.map(file => {
-          return new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsDataURL(file);
-          });
-        });
+      // 强制等待所有图片加载完成，再开始动画
+      let loadedCount = 0;
+      const totalCount = imgElements.length;
 
-        Promise.all(readers).then(images => {
-          images.forEach(src => {
-            const img = document.createElement('img');
-            img.src = src;
-            filmStrip.appendChild(img);
-          });
-          waitImagesLoaded(filmStrip).then(() => startAnimation());
-        });
+      function onImageLoad() {
+        loadedCount++;
+        if (loadedCount >= totalCount) {
+          // 所有图片加载完毕，再延迟100ms确保布局计算完成
+          setTimeout(startAnimation, 100);
+        }
       }
 
-      function waitImagesLoaded(container) {
-        const imgs = container.querySelectorAll('img');
-        const promises = Array.from(imgs).map(img => {
-          return new Promise(resolve => {
-            if (img.complete) resolve();
-            else img.addEventListener('load', resolve);
-          });
-        });
-        return Promise.all(promises);
-      }
+      imgElements.forEach(img => {
+        if (img.complete) {
+          onImageLoad();
+        } else {
+          img.addEventListener('load', onImageLoad);
+          img.addEventListener('error', onImageLoad); // 即使加载失败也继续
+        }
+      });
+
+      // 兜底：2秒后如果还没开始，强制执行
+      setTimeout(() => {
+        if (loadedCount < totalCount) {
+          loadedCount = totalCount;
+          startAnimation();
+        }
+      }, 2000);
 
       function startAnimation() {
         const stripWidth = filmStrip.scrollWidth;
         const viewerWidth = filmViewer.clientWidth;
-        let duration = selectedFileList.length * 2.5;
+
+        // 如果宽度计算为0，再等一会儿
+        if (stripWidth === 0 || viewerWidth === 0) {
+          setTimeout(startAnimation, 200);
+          return;
+        }
+
+        const photoCount = images.length;
+        let duration = photoCount * 2.5;
         if (duration < 8) duration = 8;
         if (duration > 25) duration = 25;
 
         filmStrip.style.transition = 'none';
         filmStrip.style.transform = `translateX(${viewerWidth}px)`;
+        // 强制回流
         filmStrip.offsetHeight;
-        filmHint.textContent = '回忆慢慢滑过，耐心看完哦...';
+
+        filmHint.textContent = '回忆缓缓展开，那些美好从未离开...';
         filmStrip.style.transition = `transform ${duration}s linear`;
         filmStrip.style.transform = `translateX(-${stripWidth}px)`;
 
-        animationTimer = setTimeout(() => {
+        setTimeout(() => {
           filmSection.style.display = 'none';
           couponSection.style.display = 'block';
         }, duration * 1000 + 500);
       }
 
+      // 使用和好券
       forgiveBtn.addEventListener('click', () => {
-        localStorage.setItem(STORAGE_KEY, 'used');
+        localStorage.setItem(STORAGE_KEY_USED, 'used');
         couponSection.style.display = 'none';
         usedSection.style.display = 'block';
-        if (animationTimer) clearTimeout(animationTimer);
       });
 
     })();
